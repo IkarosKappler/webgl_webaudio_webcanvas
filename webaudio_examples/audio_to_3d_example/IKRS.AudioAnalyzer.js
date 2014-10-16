@@ -1,0 +1,197 @@
+/**
+ * @author Ikaros Kappler
+ * @date 2014-08-19
+ * @version 1.0.0
+ **/
+
+
+
+IKRS.AudioAnalyzer = function() {
+
+    // Thanks to
+    //   http://www.html5rocks.com/en/tutorials/webaudio/intro/?redirect_from_locale=de
+    this.context = null;
+    // Fix up for prefixing
+    try {
+	window.AudioContext = window.AudioContext || window.webkitAudioContext;
+	this.context = new AudioContext();
+	//window.alert( "AudioContext successfully created." );
+	document.getElementById( "status_div" ).innerHTML = "AudioContext successfully created.";
+    } catch(e) {	
+	console.log( "Web Audio API is not supported in this browser." );
+	throw "Web Audio API is not supported in this browser.";
+    }
+
+};
+
+
+IKRS.AudioAnalyzer.prototype.constructor = IKRS.AudioAnalyzer;
+
+IKRS.AudioAnalyzer.prototype.setAudioByArrayBuffer = function( arrayBuffer ) {
+    
+    //window.alert( "Setting audio data from array buffer ..." );
+    
+    var audio_decoded = function( audioBuffer ) {
+	
+	var tmp = 
+	    "<code>\n" +
+	    "Audio buffer created.<br/>\n" +
+	    "sampleRate=" + audioBuffer.sampleRate + "<br/>\n" +
+	    "length=" + audioBuffer.length + "<br/>\n" +
+	    "duration=" + audioBuffer.duration + "<br/>\n" +
+	    "numberOfChannels=" + audioBuffer.numberOfChannels + "<br/>\n" +
+	    "</code>\n";
+	tmp          += "maxValue=" + maxValue + "<br/>\n";
+	
+	
+	var blockWidth   = document.getElementById( "block_resolution" ).value;
+	var maxValue     = 1.0;
+	var maxHeight    = 100; // px
+	var displayWidth = 800;
+	var columns      = Math.ceil( displayWidth/blockWidth ); // 1000;
+
+	var table        = "<table class=\"analyzer_table\" cellspacing=\"0\" cellpadding=\"0\">\n";
+
+	//window.alert( "#columns=" + columns );
+	var peaks        = audioAnalyzer.getPeaks( audioBuffer, columns ); //audioBuffer.length );
+	//var rbList       = [];
+	var hysterese    = 20.0;
+	var rbData       = "[";
+	var pathPoints   = [];
+	for( var i = 0; i < peaks.length && i < 1024; i++ ) {
+
+	    var value = peaks[i];
+	    var ampli = (value/maxValue)*maxHeight;
+
+	    if( i > 0 ) {
+		tmp += ", ";
+		rbData += ",";
+	    }
+	    tmp += value;
+	    table += "<td valign=\"middle\"><div style=\"width: " + blockWidth + "px; background-color: #000000; border-spacing: 0px; border-collapse: separate; padding: 0px; height: " + Math.round(ampli) + "px;\"></div></td>";
+
+	    pathPoints.push( new THREE.Vector2(-hysterese-ampli, (peaks.length-i)*blockWidth) );
+	    pathPoints.push( new THREE.Vector2(-hysterese-ampli, (peaks.length-1-i)*blockWidth) );
+
+	    
+	    if( i+1 >= peaks.length ) {
+
+		pathPoints.push( new THREE.Vector2(-hysterese-ampli, (peaks.length-1-i)*blockWidth) );
+		pathPoints.push( new THREE.Vector2(-hysterese-ampli, (peaks.length-2-i)*blockWidth) );
+
+		rbData += "," + Math.round(-hysterese-ampli) + ",";          // endPoint.x
+		rbData += "" + ((peaks.length-1-i)*blockWidth);   // endPoint.y
+	    }
+	}
+	// Close the path by adding a 'zero' point
+	pathPoints.push( new THREE.Vector2(0, pathPoints[pathPoints.length-1].y) );
+	rbData += "]";
+	table += "</tr>\n";
+	table += "</table><br/>\n";
+
+	// Convert point list into bezier path
+	var bezierPath = new IKRS.BezierPath( pathPoints );
+	// 'Remove' control points by moving them directly onto the path points?
+	for( var i = 0; i < bezierPath.getCurveCount(); i++ ) {
+	    var curve = bezierPath.getCurveAt( i );
+	    curve.getStartControlPoint().copy( curve.getStartPoint() );
+	    curve.getEndControlPoint().copy( curve.getEndPoint() );
+	}
+	
+	rbData = bezierPath.toReducedListRepresentation( 0 ); // No digits to save memory
+
+	var url = "http://www.dildo-generator.com/";
+	//var url = "http://booze.no-ip.org:8080/~futurelab/three.js/extrusiongen/main.html";
+	table += "<a href=\"" + url + "?rbdata=" + rbData + "&path_segments=" + (pathPoints.length*2) + "&close_path_begin=1&_screenfit=1\" target=\"_blank\">Load into Dildo Generator</a><br/>\n";
+	table += "rbdata (" + pathPoints.length + " elements):<br/>\n";
+	table += "<textarea cols=\"125\" rows=\"25\">" + rbData + "</textarea><br/>\n";
+
+	document.getElementById( "int_output" ).innerHTML   = tmp;
+	document.getElementById( "table_output" ).innerHTML = table;
+	
+
+
+
+	// THIS WORKS :)
+	
+	var src    = audioAnalyzer.context.createBufferSource();
+	src.buffer = audioBuffer;   
+	src.connect( audioAnalyzer.context.destination );
+	
+	
+	// Play immediately?
+	if( document.getElementById("play_sound").checked ) {
+	    if( src.noteOn ) // Mozilla
+		src.noteOn(0);
+	    else
+		src.start(0); 
+	}
+	
+	 
+    }
+    
+    this.context.decodeAudioData( arrayBuffer,
+				  audio_decoded,
+				  function( errmsg ) { window.alert( "error: " + errmsg ); }
+				);
+};
+
+IKRS.AudioAnalyzer.prototype.setAudioByDataURI = function( dataURI ) {
+
+    // URI format is 
+    //   "data:audio/mp3;base64,..." 
+    // or something like that
+    
+    var mimeType = dataURI.substring( 5, 
+				      dataURI.indexOf(";") 
+				    );
+    var audio = new Audio( dataURI );
+    window.alert( "Audio data loaded.\n" +
+		  "MIMEType=" + mimeType + "\n" +
+		  "channels=" + audio.mozChannels + "\n" +
+		  "sampleRate=" + audio.sampleRate + "\n"
+		);
+
+    // http://www.berlinpix.com/blog/reader/items/frequenzanalyse-mit-html5-und-web-audio-api.html
+    var analyser   = this.context.createAnalyser();
+    var sourceNode = this.context.createBufferSource( dataURI );
+    //sourceNode.src = dataURI;
+    sourceNode.connect( analyser );
+    sourceNode.connect( this.context.destination );
+
+
+    audio.play();
+
+};
+
+/**
+ * @returns {Float32Array} Array of peaks.
+ */
+IKRS.AudioAnalyzer.prototype.getPeaks = function( audioBuffer, length ) {
+    var buffer     = audioBuffer; // this.buffer;
+    var sampleSize = buffer.length / length;
+    var sampleStep = ~~(sampleSize / 10) || 1;
+    var channels   = buffer.numberOfChannels;
+    var peaks      = new Float32Array(length);
+    for (var c = 0; c < channels; c++) {
+	var chan = buffer.getChannelData(c);
+	for (var i = 0; i < length; i++) {
+	    var start = ~~(i * sampleSize);
+	    var end   = ~~(start + sampleSize);
+	    var max   = 0;
+	    for (var j = start; j < end; j += sampleStep) {
+		var value = chan[j];
+		if (value > max) {
+		    max = value;
+		    // faster than Math.abs
+		} else if (-value > max) {
+		    max = -value;
+		}
+	    }
+	    if (c == 0 || max > peaks[i]) {
+		peaks[i] = max;
+	    }
+	}
+    }
+    return peaks;
+};

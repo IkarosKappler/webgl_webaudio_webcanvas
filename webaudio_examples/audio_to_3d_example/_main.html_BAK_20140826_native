@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html> 
+<head> 
+<title>WebAudio - My first steps</title> 
+<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="description" content="HTML5 web audio test" />
+<meta name="author" content="Ikaros Kappler" />
+<meta name="keywords" content="web audio html5" />
+<link rel="stylesheet" type="text/css" media="screen" href="style.css" />
+
+<style type="text/css" media="screen">
+  body {
+  background-color: #f8f8f8;
+  }
+
+table.analyzer_table {
+  border; 0px;
+}
+</style>
+
+<script language="Javascript" type="text/javascript" src="IKRS.js"></script>
+<script language="Javascript" type="text/javascript" src="IKRS.Object.js"></script>
+<script language="Javascript" type="text/javascript" src="IKRS.AudioAnalyzer.js"></script>
+<script language="Javascript" type="text/javascript" src="main.js"></script>
+
+<script language="Javascript" type="text/javascript" src="AudioFileReader.js"></script>
+
+<script language="Javascript" type="text/javascript" src="wavesurfer.min.js"></script>
+
+</head> 
+
+
+<body> 
+
+<div id="status_div">Status: </div>
+
+Choose Audio File:
+
+  <input type="file" id="input_audio_file" onchange="loadInputAudioFile();" />
+  <button onclick="loadInputAudioFile();">Load Audio File</button>
+<br/>
+
+
+<!--
+<audio controls="controls" autobuffer="autobuffer">
+    <source id="audio_source" src="data:audio/x-wav;base64," />
+</audio>
+-->
+
+Integer Output:<div id="int_output" style="font-family: Monospace;"></div>
+
+Analysis:<div id="table_output"></div>
+
+</body>
+</html>
