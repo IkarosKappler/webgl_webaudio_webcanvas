@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html> 
+<head> 
+<title>WebGL example</title> 
+<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="description" content="WebGL exmaple" />
+<meta name="author" content="Ikaros Kappler" />
+<meta name="keywords" content="webgl example html5" />
+
+<style type="text/css" media="screen">
+  body {
+  background-color: #f8f8f8;
+  font-family: sans-serif;
+  }
+</style>
+
+<script language="Javascript" type="text/javascript" src="main.js"></script>
+
+</head> 
+<body> 
+
+<canvas id="my_canvas"
+	width=512
+	height=768>
+  Your browser doesn't appear to support the HTML5 <code>&lt;canvas&gt;</code> element.
+</canvas>
+
+
+</body>
+</html>

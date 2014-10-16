@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html> 
+<head> 
+<title>WebGL example</title> 
+<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="description" content="WebGL exmaple" />
+<meta name="author" content="Ikaros Kappler" />
+<meta name="keywords" content="webgl example html5" />
+
+<style type="text/css" media="screen">
+  body {
+  background-color: #f8f8f8;
+  font-family: sans-serif;
+  }
+</style>
+
+<script language="Javascript" type="text/javascript" src="glDegMatrix.js"></script>
+<script language="Javascript" type="text/javascript" src="gpu.js"></script>
+<script language="Javascript" type="text/javascript" src="main.js"></script>
+
+<!-- Shaders -->
+
+<script id="shade_vert" type="x-shader/GLSL">
+
+    #version 100
+    precision mediump float;
+    
+    uniform mat4 gProjectionMatrix;
+    uniform mat4 gModelViewMatrix;
+    uniform mat4 gNormalMatrix;
+    
+    uniform vec4 gLightPos;
+    uniform vec4 gColor;
+    
+    attribute vec3 vPosition;
+    attribute vec3 vNormal;
+    
+    varying vec4 fColor;
+    
+    void main(void)
+    {
+        vec4 eyeNorm, eyePos, lightDir, pos;
+        float NdotL, diffuse;
+        
+        eyeNorm = normalize(gNormalMatrix * vec4(vNormal, 0));
+        eyePos  = gModelViewMatrix * vec4(vPosition, 1);        
+        
+        lightDir = normalize(gLightPos - eyePos);
+        NdotL = max(dot(eyeNorm.xyz, lightDir.xyz), 0.0);
+        
+        //fColor = gColor;
+        fColor = vec4(gColor.rgb * NdotL, 1);
+        
+        pos = vec4(vPosition, 1);
+        gl_Position = gProjectionMatrix * gModelViewMatrix * pos;
+    }
+</script>
+
+<script id="shade_frag" type="x-shader/GLSL">
+
+    #version 100
+    // Must specify precision in WebGL frag shaders
+    precision mediump float;
+    
+    varying vec4 fColor;
+    varying vec4 bColor;
+    
+    void main(void)
+    {
+        // Want to see polygons in wrong order
+        if (gl_FrontFacing)
+            gl_FragColor = fColor;
+        else
+            gl_FragColor = vec4(1,0,0,1);
+    }
+</script>
+
+
+</head> 
+<body> 
+
+<canvas id="my_canvas"
+	width=512
+	height=768>
+  Your browser doesn't appear to support the HTML5 <code>&lt;canvas&gt;</code> element.
+</canvas>
+
+
+</body>
+</html>
